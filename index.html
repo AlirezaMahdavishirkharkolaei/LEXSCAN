@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexScan — AI Legal Contract Intelligence</title>
+  <meta name="description" content="Professional AI-powered contract analysis for legal practitioners." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">⚖️</div>
+        <div class="logo-text">
+          <span class="logo-name">LexScan</span>
+          <span class="logo-tagline" id="txt-tagline">Professional Legal Intelligence</span>
+        </div>
+      </div>
+      <div class="lang-switcher" id="langSwitcher"></div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- SETUP NOTICE (shown once) -->
+    <div id="setupNotice" class="setup-notice" style="display:none">
+      <div class="setup-icon">🔑</div>
+      <div class="setup-body">
+        <strong id="txt-setupTitle">Free API Key Required</strong>
+        <p id="txt-setupDesc">LexScan uses Google Gemini AI — completely free, no credit card needed.</p>
+        <ol class="setup-steps" id="setupStepsList"></ol>
+        <button class="btn btn-primary" onclick="dismissSetup()" id="txt-setupBtn">Got it, let me enter my key</button>
+      </div>
+    </div>
+
+    <!-- INPUT PANEL -->
+    <div id="inputPanel">
+      <div class="hero">
+        <h1 class="hero-title" id="txt-subtitle">AI-Powered Legal Contract Intelligence</h1>
+        <p class="hero-desc" id="txt-tagline2">Upload contract images, use your camera, or paste text.</p>
+      </div>
+
+      <div class="panel">
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active" data-tab="upload" onclick="switchTab('upload')">
+            <span>📁</span> <span id="txt-tab-upload">Upload Images</span>
+          </button>
+          <button class="tab" data-tab="camera" onclick="switchTab('camera')">
+            <span>📷</span> <span id="txt-tab-camera">Camera</span>
+          </button>
+          <button class="tab" data-tab="text" onclick="switchTab('text')">
+            <span>✍️</span> <span id="txt-tab-text">Paste Text</span>
+          </button>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="tab-upload" class="tab-content active">
+          <div class="dropzone" id="dropzone"
+               onclick="document.getElementById('fileInput').click()"
+               ondrop="handleDrop(event)"
+               ondragover="handleDragOver(event)"
+               ondragleave="handleDragLeave(event)">
+            <div class="drop-icon">📄</div>
+            <div class="drop-main" id="txt-dragDrop">Drag & drop contract pages here</div>
+            <div class="drop-sub" id="txt-orClick">or click to browse files</div>
+            <div class="drop-formats" id="txt-formats">Supports JPG, PNG, WEBP</div>
+          </div>
+          <input type="file" id="fileInput" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)" />
+        </div>
+
+        <!-- Camera Tab -->
+        <div id="tab-camera" class="tab-content">
+          <div class="camera-container">
+            <div class="video-wrap" id="videoWrap">
+              <video id="videoEl" autoplay playsinline muted></video>
+              <div class="camera-placeholder" id="cameraPlaceholder">
+                <span style="font-size:48px">📷</span>
+                <span id="txt-cameraHint">Camera will appear here</span>
+              </div>
+            </div>
+            <canvas id="captureCanvas" style="display:none"></canvas>
+            <div class="camera-btns">
+              <button class="btn btn-primary" id="btnStartCam" onclick="startCamera()">▶ <span id="txt-cameraStart">Start Camera</span></button>
+              <button class="btn btn-success" id="btnCapture" onclick="captureFrame()" style="display:none">📸 <span id="txt-cameraCapture">Capture Page</span></button>
+              <button class="btn btn-danger"  id="btnStopCam" onclick="stopCamera()"   style="display:none">⏹ <span id="txt-cameraStop">Stop Camera</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Tab -->
+        <div id="tab-text" class="tab-content">
+          <textarea id="contractText" class="text-area"
+            placeholder="Paste the full contract text here for analysis..."></textarea>
+        </div>
+
+        <!-- Thumbnails -->
+        <div id="thumbnailArea" style="display:none" class="thumbnail-area">
+          <div class="thumb-label" id="txt-uploadedFiles">Uploaded Files</div>
+          <div class="thumb-grid" id="thumbGrid"></div>
+        </div>
+
+        <!-- API Key Section -->
+        <div class="apikey-section">
+          <div class="apikey-header">
+            <span>🔑</span>
+            <span id="txt-apiLabel">Google Gemini API Key (Free)</span>
+            <button class="how-to-btn" onclick="toggleSetup()" id="txt-howTo">How to get it?</button>
+          </div>
+          <input type="password" id="apiKeyInput" class="apikey-input"
+            placeholder="AIzaSy..." autocomplete="off"
+            oninput="onApiKeyInput(this.value)" />
+          <div class="apikey-badge">
+            <span class="badge-free">✓ FREE</span>
+            <span id="txt-apiHint">No credit card · 1500 requests/day · Google account only</span>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="errorBox" class="error-box" style="display:none"></div>
+
+        <!-- Analyze -->
+        <div class="analyze-wrap">
+          <button class="btn btn-analyze" id="analyzeBtn" onclick="analyze()" disabled>
+            <span id="analyzeBtnIcon">🔍</span>
+            <span id="txt-analyzeBtn">Analyze Contract</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT PANEL -->
+    <div id="reportPanel" style="display:none">
+      <div class="report-header">
+        <div>
+          <h2 class="report-title" id="txt-reportTitle">Legal Intelligence Report</h2>
+          <p class="report-sub" id="txt-reportSub">Extracted key legal information</p>
+        </div>
+        <div class="report-badges" id="reportBadges"></div>
+      </div>
+      <div class="summary-card" id="summaryCard"></div>
+      <div class="sections-grid" id="sectionsGrid"></div>
+      <div class="report-actions">
+        <button class="btn btn-secondary" onclick="newAnalysis()">← <span id="txt-newAnalysis">New Analysis</span></button>
+        <button class="btn btn-primary"   onclick="exportReport()">⬇ <span id="txt-exportBtn">Export Report</span></button>
+        <button class="btn btn-print"     onclick="printReport()">🖨 <span id="txt-printBtn">Print</span></button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div>LexScan © 2025 — AI Legal Contract Intelligence</div>
+    <div class="footer-sub">Powered by Google Gemini AI · Free to use · For professional use only</div>
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
