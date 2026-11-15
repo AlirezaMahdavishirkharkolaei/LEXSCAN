@@ -3,9 +3,10 @@
 
 export const MODELS = [
   { id: "gemini-flash-latest", label: "Gemini Flash (latest)" },
-  { id: "gemini-pro-latest", label: "Gemini Pro (latest, deeper, slower)" },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash" },
+  { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite (fastest)" },
+  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (preview, deeper, may need billing)" },
 ];
 
 const ENDPOINT = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -70,7 +71,7 @@ export function analysisPrompt({ jurisdiction = "generic", perspective = "", lan
     "Rules:",
     hasText
       ? "- The contract is given as numbered paragraphs [P1], [P2], ... Put the paragraph number in \"paragraph\"."
-      : "- The contract is given as images or a PDF. First transcribe it faithfully into \"transcript\", then analyse it; paragraph numbers refer to the order of paragraphs in your transcript.",
+      : "- The contract is given as images or a PDF (several images are consecutive pages of one document). First transcribe it faithfully into \"transcript\", separating paragraphs with a blank line, then analyse it; paragraph numbers refer to the order of paragraphs in your transcript.",
     "- Every \"quote\" must be copied VERBATIM from the contract (an exact substring, 5-60 words). Never paraphrase inside a quote. If you cannot quote, leave it empty.",
     "- Cover every significant clause: parties, term/renewal, payment, liability, indemnity, IP, confidentiality, data protection, termination, penalties, restrictive covenants, assignment, governing law and disputes.",
     "- \"risk\" reflects the risk for the reviewing party (or both parties if neutral). Be specific about why.",
@@ -80,13 +81,14 @@ export function analysisPrompt({ jurisdiction = "generic", perspective = "", lan
   ].join("\n");
 }
 
-async function call({ apiKey, model, parts, schema, temperature = 0.1 }) {
+async function call({ apiKey, model, parts, schema }) {
   const res = await fetch(ENDPOINT(model), {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ role: "user", parts }],
-      generationConfig: { temperature, responseMimeType: "application/json", responseSchema: schema, maxOutputTokens: 16384 },
+      // Temperature is left at the model default: Gemini 3 models are tuned for it.
+      generationConfig: { responseMimeType: "application/json", responseSchema: schema, maxOutputTokens: 32768 },
     }),
   });
   if (!res.ok) {
@@ -133,5 +135,5 @@ export async function ask({ apiKey, model, paras, question, language = "en" }) {
     `Answer in ${LANGUAGES[language] || "English"}.`,
     "", `QUESTION: ${question}`, "", "CONTRACT:", numberedText(paras),
   ].join("\n");
-  return call({ apiKey, model, parts: [{ text: prompt }], schema: QA_SCHEMA, temperature: 0 });
+  return call({ apiKey, model, parts: [{ text: prompt }], schema: QA_SCHEMA });
 }

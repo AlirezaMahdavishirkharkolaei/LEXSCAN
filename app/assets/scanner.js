@@ -92,7 +92,7 @@ export function scan(text) {
     if (CLAUSES.non_compete.p.some((re) => re.test(n))) {
       for (const m of n.matchAll(DURATION)) {
         if (toDays(Number(m[1]), m[2]) > 730) {
-          flags.push({ id: "long_non_compete", text: `Restrictive covenant lasting ${m[1]} ${m[2]}: may be unenforceable or void as a restraint of trade.`, paragraph: i, snippet: para.slice(0, 260) });
+          flags.push({ id: "long_non_compete", n: m[1], unit: m[2], text: `Restrictive covenant lasting ${m[1]} ${m[2]}: may be unenforceable or void as a restraint of trade.`, paragraph: i, snippet: para.slice(0, 260) });
           break;
         }
       }
@@ -100,7 +100,7 @@ export function scan(text) {
     if (CLAUSES.payment.p.some((re) => re.test(n)) && /\b(within|in|icinde|εντος)\b/.test(n)) {
       for (const m of n.matchAll(DURATION)) {
         if (toDays(Number(m[1]), m[2]) >= 60 && toDays(Number(m[1]), m[2]) <= 365 && /(pay|invoice|odeme|fatura|πληρωμ|καταβολ)/.test(n)) {
-          flags.push({ id: "long_payment_term", text: `Long payment term (${m[1]} ${m[2]}).`, paragraph: i, snippet: para.slice(0, 260) });
+          flags.push({ id: "long_payment_term", n: m[1], unit: m[2], text: `Long payment term (${m[1]} ${m[2]}).`, paragraph: i, snippet: para.slice(0, 260) });
           break;
         }
       }
@@ -110,7 +110,8 @@ export function scan(text) {
   const clauses = Object.entries(CLAUSES).map(([key, def]) => ({
     key, label: def.label, expected: def.expected, paragraphs: found[key] || [], present: Boolean(found[key]),
   }));
-  const missing = clauses.filter((c) => c.expected && !c.present).map((c) => c.label);
+  const missingKeys = clauses.filter((c) => c.expected && !c.present).map((c) => c.key);
+  const missing = missingKeys.map((k) => CLAUSES[k].label);
 
   const plain = String(text || "");
   const uniq = (arr) => [...new Set(arr.map((s) => s.trim()))];
@@ -128,7 +129,7 @@ export function scan(text) {
   const score = Math.round(100 * (coverage - missing.length) / coverage);
   return {
     language: lang, paragraphs: paras, wordCount: (plain.match(/\S+/g) || []).length,
-    parties: partyNames(plain), clauses, missing, redFlags,
+    parties: partyNames(plain), clauses, missing, missingKeys, redFlags,
     data: { amounts, dates, durations, percentages, definedTerms: defined },
     completeness: score,
   };

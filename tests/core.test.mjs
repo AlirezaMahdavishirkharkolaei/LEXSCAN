@@ -7,6 +7,8 @@ import { redact, restore } from "../app/assets/redact.js";
 import { analyse, ask, parseJson, numberedText } from "../app/assets/gemini.js";
 import { toHtml, toMarkdown } from "../app/assets/report.js";
 import { SAMPLE_CONTRACT, SAMPLE_ANALYSIS } from "../app/assets/sample.js";
+import { missingKeys, tFor } from "../app/assets/i18n.js";
+import { CLAUSES } from "../app/assets/scanner.js";
 
 const TR = `HİZMET SÖZLEŞMESİ
 
@@ -119,9 +121,27 @@ test("Gemini errors are explained", async () => {
 test("reports render", () => {
   const scanned = scan(SAMPLE_CONTRACT);
   const a = verifyAnalysis(structuredClone(SAMPLE_ANALYSIS), scanned.paragraphs);
-  const ctx = { docName: "Sample", analysis: a, scan: scanned, options: { jurisdictionLabel: "Cyprus", perspective: "Client" } };
+  const ctx = { docName: "Sample", analysis: a, scan: scanned, options: { jurisdictionLabel: "Cyprus", perspective: "Client", language: "en" } };
   const md = toMarkdown(ctx);
   assert.ok(md.includes("## Clause review") && md.includes("verified in document"));
   const html = toHtml(ctx);
   assert.ok(html.startsWith("<!DOCTYPE html>") && !html.includes("<script"));
+});
+
+test("reports follow the report language, including RTL", () => {
+  const scanned = scan(SAMPLE_CONTRACT);
+  const a = verifyAnalysis(structuredClone(SAMPLE_ANALYSIS), scanned.paragraphs);
+  const html = toHtml({ docName: "S", analysis: a, scan: scanned, options: { jurisdictionLabel: "CY", language: "fa" } });
+  assert.ok(html.includes('dir="rtl"') && html.includes("بررسی بندها"));
+  assert.ok(toMarkdown({ docName: "S", analysis: a, scan: scanned, options: { jurisdictionLabel: "CY", language: "tr" } }).includes("## Madde incelemesi"));
+});
+
+test("every interface language has every string, clause and flag", () => {
+  assert.deepEqual(missingKeys(), {});
+  const en = tFor("en");
+  for (const k of Object.keys(CLAUSES)) assert.notEqual(en("clause_" + k), "clause_" + k);
+  for (const id of ["auto_renewal", "unlimited_liability", "sole_discretion", "exclusive_jurisdiction", "penalty", "waiver_of_rights", "unilateral_change", "long_non_compete", "long_payment_term"]) {
+    assert.notEqual(en("flag_" + id), "flag_" + id);
+  }
+  assert.equal(tFor("de")("long_x_missing"), "long_x_missing");
 });

@@ -26,17 +26,27 @@ It opens with a fictional sample contract and a sample review, so you can see th
 
 ### Documents
 
-PDF (text layer, read with pdf.js), Word `.docx` (read with mammoth), plain text, Markdown and HTML are extracted in the browser. Scanned PDFs and photos are sent to Gemini, which first transcribes them and then reviews them; the transcript becomes the document view.
+PDF (text layer, read with pdf.js), Word `.docx` (read with mammoth), plain text, Markdown and HTML are extracted in the browser. Scanned PDFs and photos go to Gemini, which transcribes them and then reviews them; the transcript becomes the document view. Several photos are treated as consecutive pages of one document. On a phone, **Photograph pages** opens the camera, and **+** adds another page. Photos are downscaled in the browser before they are sent.
+
+### Languages
+
+The interface is available in English, Türkçe, Ελληνικά, Русский, Deutsch and فارسی (right-to-left). It follows the browser language, and you can change it in the header or link to it with `?lang=tr`. The AI report language is chosen separately, and exported reports use that language for their headings.
 
 ### Exports
 
 A self-contained HTML report, Markdown, JSON (for use in other tools), and Print / Save as PDF.
 
+## Getting an API key
+
+Open [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey), sign in with a Google account, press **Create API key**, and paste the key into **Settings & API key**.
+
 ## Privacy
 
 There is no LexScan server. The page is static and the instant scan never leaves the browser. Only the AI review and Q&A send the document to Google, and they do so under your own key. The key is kept in memory for the session, unless you tick "remember", which stores it in this browser's local storage.
 
-If you use Google's **free tier**, Google may use what you send to improve its products. For client documents, use a key with billing enabled. You can also tick **pseudonymise**: party names, e-mails, phone numbers, IBANs, card numbers and company or ID numbers are then replaced with placeholders before sending, and restored in the report.
+**Models.** The default is `gemini-flash-latest`, which Google keeps pointed at its newest Flash model. You can also pick a specific model or type any model id.
+
+If you use Google's **free tier**, Google may use what you send to improve its products. For client documents, use a key with billing enabled. You can also tick **pseudonymise**: party names, e-mails, phone numbers, IBANs, card numbers and company or ID numbers are then replaced with placeholders before sending, and restored in the report. Pseudonymisation works on text: photos and scans are sent as images.
 
 ## Run locally
 
@@ -46,7 +56,7 @@ cd LEXSCAN/app
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-To run the tests (Node 20 or later): `npm test`
+To run the tests (Node 20 or later): `npm test`. They cover the scanner, quote verification, pseudonymisation, the Gemini request format and error handling, the report exports, and the completeness of the translations.
 
 ## Project layout
 
@@ -62,6 +72,7 @@ app/
     gemini.js     prompts, JSON schemas and the Gemini API calls
     extract.js    PDF / DOCX / image extraction in the browser
     report.js     HTML and Markdown exports
+    i18n.js       interface strings (EN / TR / EL / RU / DE / FA)
     sample.js     fictional sample contract and illustrative sample review
 tests/            node --test suite
 ```
