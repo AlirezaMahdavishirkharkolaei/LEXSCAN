@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LexScan</title>
+<meta name="description" content="Contract review workspace: instant clause scan, AI review with verified quotes, and Q&A grounded in the contract.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f5c55'/><path d='M9 8h3v13h9v3H9z' fill='white'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">L</span>
+    <div><h1>LexScan</h1><p>Contract review workspace</p></div>
+  </div>
+  <div class="top-actions">
+    <span class="mode" id="mode" role="status">Demo mode</span>
+    <button class="ghost" id="open-settings" type="button" aria-controls="settings" aria-expanded="false">Settings &amp; API key</button>
+  </div>
+</header>
+
+<section class="settings" id="settings" hidden aria-label="Settings">
+  <div class="settings-grid">
+    <label class="f wide">Google Gemini API key
+      <input type="password" id="api-key" autocomplete="off" spellcheck="false" placeholder="Paste your key from Google AI Studio">
+      <span class="hint">Get a key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a>. It is sent only to Google.</span>
+    </label>
+    <label class="chk"><input type="checkbox" id="remember-key"> Remember the key on this device</label>
+    <label class="f">Model<select id="model"></select></label>
+    <label class="f">Custom model id<input id="model-custom" placeholder="optional, e.g. gemini-3-flash-preview"></label>
+    <label class="f">Legal framework<select id="jurisdiction">
+      <option value="cy">Republic of Cyprus (Cap. 149)</option><option value="trnc">Northern Cyprus (Fasıl 149)</option>
+      <option value="ew">England &amp; Wales</option><option value="tr">Turkey (TBK 6098)</option><option value="gr">Greece</option>
+      <option value="generic">No specific jurisdiction</option></select></label>
+    <label class="f">Review for<input id="perspective" placeholder="e.g. the Client, or a party's name (empty = neutral)"></label>
+    <label class="f">Report language<select id="language">
+      <option value="en">English</option><option value="tr">Türkçe</option><option value="el">Ελληνικά</option>
+      <option value="fa">فارسی</option><option value="ru">Русский</option><option value="de">Deutsch</option></select></label>
+    <label class="chk"><input type="checkbox" id="pseudonymise"> Replace party names, e-mails, phones, IBANs and ID numbers with placeholders before sending</label>
+  </div>
+  <p class="note">AI analysis sends the document to Google Gemini under your key. Content sent on Google's free tier may be used by Google to improve its products, so use pseudonymisation or a key with billing for client files.</p>
+</section>
+
+<main class="workspace">
+  <section class="doc-col" aria-label="Document">
+    <div class="card intake" id="intake">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Upload a contract">
+        <strong>Drop a contract here</strong>
+        <span>PDF, Word (.docx), text or a photo · or click to choose</span>
+        <input type="file" id="file" accept=".pdf,.docx,.txt,.md,.html,image/*" hidden>
+      </div>
+      <div class="intake-row">
+        <button class="ghost" type="button" id="paste-toggle">Paste text</button>
+        <button class="ghost" type="button" id="load-sample">Load the sample contract</button>
+      </div>
+      <div id="paste-box" hidden>
+        <textarea id="paste" placeholder="Paste the contract text…" dir="auto"></textarea>
+        <button class="primary" type="button" id="paste-go">Use this text</button>
+      </div>
+    </div>
+    <div class="card doc">
+      <div class="doc-head">
+        <div><h2 id="doc-name">No document</h2><p class="meta" id="doc-meta"></p></div>
+        <div class="legend"><span class="hl-scan">scan</span><span class="hl-ai">AI quote</span></div>
+      </div>
+      <div class="doc-body" id="doc-body" dir="auto"></div>
+    </div>
+  </section>
+
+  <section class="ana-col" aria-label="Analysis">
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-scan" aria-selected="true" aria-controls="panel-scan">Instant scan</button>
+      <button role="tab" id="tab-ai" aria-selected="false" aria-controls="panel-ai">AI review</button>
+      <button role="tab" id="tab-ask" aria-selected="false" aria-controls="panel-ask">Ask the contract</button>
+    </nav>
+    <p class="msg" id="msg" hidden></p>
+
+    <div class="panel" id="panel-scan" role="tabpanel" aria-labelledby="tab-scan"></div>
+
+    <div class="panel" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
+      <div class="run-bar">
+        <button class="primary" id="run-ai" type="button">Run AI review</button>
+        <span class="meta" id="ai-meta"></span>
+      </div>
+      <div id="ai-out"></div>
+    </div>
+
+    <div class="panel" id="panel-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+      <form id="ask-form" class="ask-form">
+        <input id="question" placeholder="e.g. Can the Developer raise prices? What happens if we terminate early?" dir="auto" autocomplete="off">
+        <button class="primary" type="submit">Ask</button>
+      </form>
+      <div class="suggest" id="suggest"></div>
+      <div id="qa"></div>
+    </div>
+
+    <div class="export" id="export" hidden>
+      <span class="meta">Export</span>
+      <button class="ghost" type="button" data-export="html">Report (HTML)</button>
+      <button class="ghost" type="button" data-export="md">Markdown</button>
+      <button class="ghost" type="button" data-export="json">JSON</button>
+      <button class="ghost" type="button" data-export="print">Print / PDF</button>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  LexScan supports a lawyer's review; it does not replace it. Every AI quote is checked against the document, and unverified quotes are marked.
+  · <a href="https://github.com/AlirezaMahdavishirkharkolaei/LEXSCAN">Source code</a>
+</footer>
+
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>
