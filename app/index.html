@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LexScan: contract review with verified AI quotes</title>
+<meta name="description" content="Contract review workspace: instant clause scan in English, Turkish and Greek, AI review in which every quote is checked against the document, and Q&A grounded in the contract.">
+<meta property="og:title" content="LexScan: contract review with verified AI quotes">
+<meta property="og:description" content="Instant clause scan, AI review with verified quotes, and Q&A grounded in the contract. Runs in the browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f5c55'/><path d='M9 8h3v13h9v3H9z' fill='white'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">L</span>
+    <div><h1>LexScan</h1><p data-i18n="tagline">Contract review workspace</p></div>
+  </div>
+  <div class="top-actions">
+    <span class="mode" id="mode" role="status">Demo mode</span>
+    <label class="sr-only" for="ui-lang" data-i18n="uiLang">Interface language</label>
+    <select id="ui-lang" class="lang-select"></select>
+    <button class="ghost" id="open-settings" type="button" aria-controls="settings" aria-expanded="false" data-i18n="settingsBtn">Settings &amp; API key</button>
+  </div>
+</header>
+
+<section class="settings" id="settings" hidden aria-label="Settings">
+  <div class="settings-grid">
+    <label class="f wide"><span data-i18n="apiKey">Google Gemini API key</span>
+      <input type="password" id="api-key" autocomplete="off" spellcheck="false" data-i18n-ph="apiKeyPh" dir="ltr">
+      <span class="hint" data-i18n-html="keySteps"></span>
+    </label>
+    <label class="chk"><input type="checkbox" id="remember-key"> <span data-i18n="remember">Remember the key on this device</span></label>
+    <label class="f"><span data-i18n="model">Model</span><select id="model"></select></label>
+    <label class="f"><span data-i18n="modelCustom">Custom model id</span><input id="model-custom" data-i18n-ph="modelCustomPh" dir="ltr"></label>
+    <label class="f"><span data-i18n="framework">Legal framework</span><select id="jurisdiction">
+      <option value="cy" data-i18n="fw_cy"></option><option value="trnc" data-i18n="fw_trnc"></option>
+      <option value="ew" data-i18n="fw_ew"></option><option value="tr" data-i18n="fw_tr"></option><option value="gr" data-i18n="fw_gr"></option>
+      <option value="generic" data-i18n="fw_generic"></option></select></label>
+    <label class="f"><span data-i18n="reviewFor">Review for</span><input id="perspective" data-i18n-ph="reviewForPh" dir="auto"></label>
+    <label class="f"><span data-i18n="reportLang">Report language</span><select id="language">
+      <option value="en">English</option><option value="tr">Türkçe</option><option value="el">Ελληνικά</option>
+      <option value="fa">فارسی</option><option value="ru">Русский</option><option value="de">Deutsch</option></select></label>
+    <label class="chk"><input type="checkbox" id="pseudonymise"> <span data-i18n="pseudo"></span></label>
+  </div>
+  <p class="note" data-i18n="note"></p>
+</section>
+
+<main class="workspace">
+  <section class="doc-col" aria-label="Document">
+    <div class="card intake" id="intake">
+      <div class="drop" id="drop" tabindex="0" role="button">
+        <strong data-i18n="drop">Drop a contract here</strong>
+        <span data-i18n="dropSub"></span>
+        <input type="file" id="file" accept=".pdf,.docx,.txt,.md,.html,image/*" multiple hidden>
+      </div>
+      <div class="intake-row">
+        <button class="ghost" type="button" id="photo-btn" data-i18n="photo">Photograph pages</button>
+        <input type="file" id="camera" accept="image/*" capture="environment" hidden>
+        <button class="ghost" type="button" id="paste-toggle" data-i18n="paste">Paste text</button>
+        <button class="ghost" type="button" id="load-sample" data-i18n="sample">Load the sample contract</button>
+      </div>
+      <div id="paste-box" hidden>
+        <textarea id="paste" data-i18n-ph="pastePh" dir="auto"></textarea>
+        <button class="primary" type="button" id="paste-go" data-i18n="useText">Use this text</button>
+      </div>
+    </div>
+    <div class="card doc">
+      <div class="doc-head">
+        <div><h2 id="doc-name" dir="auto">No document</h2><p class="meta" id="doc-meta"></p></div>
+        <div class="legend"><span class="hl-scan" data-i18n="legendScan">scan</span><span class="hl-ai" data-i18n="legendAi">AI quote</span></div>
+      </div>
+      <div class="thumbs" id="thumbs" hidden></div>
+      <div class="doc-body" id="doc-body" dir="auto"></div>
+    </div>
+  </section>
+
+  <section class="ana-col" aria-label="Analysis">
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-scan" aria-selected="true" aria-controls="panel-scan" data-i18n="tabScan">Instant scan</button>
+      <button role="tab" id="tab-ai" aria-selected="false" aria-controls="panel-ai" data-i18n="tabAi">AI review</button>
+      <button role="tab" id="tab-ask" aria-selected="false" aria-controls="panel-ask" data-i18n="tabAsk">Ask the contract</button>
+    </nav>
+    <p class="msg" id="msg" hidden role="alert"></p>
+
+    <div class="panel" id="panel-scan" role="tabpanel" aria-labelledby="tab-scan"></div>
+
+    <div class="panel" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
+      <div class="run-bar">
+        <button class="primary" id="run-ai" type="button" data-i18n="runAi">Run AI review</button>
+        <span class="meta" id="ai-meta" aria-live="polite"></span>
+      </div>
+      <div id="ai-out"></div>
+    </div>
+
+    <div class="panel" id="panel-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+      <form id="ask-form" class="ask-form">
+        <input id="question" data-i18n-ph="askPh" dir="auto" autocomplete="off">
+        <button class="primary" type="submit" data-i18n="askBtn">Ask</button>
+      </form>
+      <div class="suggest" id="suggest"></div>
+      <div id="qa" aria-live="polite"></div>
+    </div>
+
+    <div class="export" id="export" hidden>
+      <span class="meta" data-i18n="export">Export</span>
+      <button class="ghost" type="button" data-export="html" data-i18n="exHtml">Report (HTML)</button>
+      <button class="ghost" type="button" data-export="md" data-i18n="exMd">Markdown</button>
+      <button class="ghost" type="button" data-export="json" data-i18n="exJson">JSON</button>
+      <button class="ghost" type="button" data-export="print" data-i18n="exPrint">Print / PDF</button>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span data-i18n="footer"></span>
+  · <a href="https://github.com/AlirezaMahdavishirkharkolaei/LEXSCAN" data-i18n="source">Source code</a>
+</footer>
+
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>
