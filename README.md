@@ -87,6 +87,8 @@ tests/            node --test suite
 
 Alireza Mahdavi Shirkharkolaei, LL.M. (Cyprus International University). This project is part of a series of legal-tech tools on contract, tax and trade law.
 
+**Mohammad Amir Modami** collaborated on the legal analysis and research behind this project.
+
 ## License
 
 [MIT](LICENSE)
